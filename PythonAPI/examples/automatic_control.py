@@ -649,7 +649,10 @@ class CameraManager(object):
                 bp.set_attribute('image_size_x', str(hud.dim[0]))
                 bp.set_attribute('image_size_y', str(hud.dim[1]))
             elif item[0].startswith('sensor.lidar'):
-                bp.set_attribute('range', '5000')
+                bp.set_attribute('range', '500')   #lidar settings
+                bp.set_attribute('points_per_second', '300000')
+                bp.set_attribute('channels','16.0')  # channels settings  default value=32
+                bp.set_attribute('rotation_frequency','10.0') # frequency settings  default value=10.0
             item.append(bp)
         self.index = None
 
@@ -695,16 +698,26 @@ class CameraManager(object):
             return
         if self.sensors[self.index][0].startswith('sensor.lidar'):
             points = np.frombuffer(image.raw_data, dtype=np.dtype('f4'))
-            points = np.reshape(points, (int(points.shape[0] / 3), 3))
+
+         
+            points = np.reshape(points, (int(points.shape[0] / 4), 4))    	 # The four values are Sensor_Speed,Sensor_Altitude_Anglem,Azimuth_angle,Object_distance
+            								     	 # (X,Y,Z) can be calculated from these four values.
+           
+ 
             lidar_data = np.array(points[:, :2])
-            lidar_data *= min(self.hud.dim) / 100.0
+            lidar_data *= min(self.hud.dim) / 100                         	 #Lidar Screen display range
             lidar_data += (0.5 * self.hud.dim[0], 0.5 * self.hud.dim[1])
-            lidar_data = np.fabs(lidar_data)  # pylint: disable=E1111
+            lidar_data = np.fabs(lidar_data)                              	 # pylint: disable=E1111
             lidar_data = lidar_data.astype(np.int32)
-            lidar_data = np.reshape(lidar_data, (-1, 2))
-            lidar_img_size = (self.hud.dim[0], self.hud.dim[1], 3)
-            lidar_img = np.zeros(lidar_img_size)
-            lidar_img[tuple(lidar_data.T)] = (255, 255, 255)
+            lidar_data = np.reshape(lidar_data, (-1, 2))                  	 # data reshape
+            lidar_img_size = (self.hud.dim[0], self.hud.dim[1], 3)            # CLient window's setting size
+            
+            lidar_img = np.zeros((lidar_img_size), dtype=np.uint8)           
+            copy_data=np.copy(lidar_data.T)					 # Copy Lidar_data.T,Because it's value is unwritable
+            copy_data=np.delete(copy_data,np.where(copy_data[0]>1279),axis=1) # Delete the values whose point coordiantes exceed the h_boundary,and delete the corresponding v coordinates 
+            copy_data=np.delete(copy_data,np.where(copy_data[1]>719),axis=1)  # Delete the values whose point coordiantes exceed the v_boundary,and delete the corresponding h coordinates
+            lidar_img[tuple(copy_data)] = (255, 255, 255)			 # Display
+            
             self.surface = pygame.surfarray.make_surface(lidar_img)
         else:
             image.convert(self.sensors[self.index][1])

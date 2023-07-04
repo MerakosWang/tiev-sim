@@ -13,6 +13,14 @@
 
 #include "SceneCaptureCamera.generated.h"
 
+// Define how to capture the scene.
+UENUM()
+enum class ECaptureMode : uint8 {
+  Always  UMETA(DisplayName = "Always"),
+  Step    UMETA(DisplayName = "Step"),
+  Never   UMETA(DisplayName = "Never")
+};
+
 /// A sensor that captures images from the scene.
 UCLASS()
 class CARLA_API ASceneCaptureCamera : public ASceneCaptureSensor
@@ -25,5 +33,23 @@ public:
 
 protected:
 
+  // Called in BeginPlay() of parent class.
+  void SetUpSceneCaptureComponent(USceneCaptureComponent2D &SceneCapture) override;
+
   void Tick(float DeltaTime) override;
+
+private:
+
+  friend class ACameraManager;
+
+  // Only when has token can this camera capture. Higher priority than CaptureMode.
+  UPROPERTY(EditAnywhere)
+  bool bToken = true;
+
+  // Whether to capture in this frame, only used to implement step mode.
+  UPROPERTY(EditAnywhere)
+  bool bCapture = true;
+
+  UPROPERTY(EditAnywhere)
+  ECaptureMode CaptureMode = ECaptureMode::Always;
 };

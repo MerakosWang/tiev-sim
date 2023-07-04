@@ -714,7 +714,7 @@ class CameraManager(object):
                     bp.set_attribute('gamma', str(gamma_correction))
             elif item[0].startswith('sensor.lidar'):
                 bp.set_attribute('range', '4000')
-               
+                bp.set_attribute('camera_quality', '0.5')
                 bp.set_attribute('points_per_second', '300000')
             item.append(bp)
         self.index = None
@@ -762,7 +762,7 @@ class CameraManager(object):
             return
         if self.sensors[self.index][0].startswith('sensor.lidar'):
             points = np.frombuffer(image.raw_data, dtype=np.dtype('f4'))
-            points = np.reshape(points, (int(points.shape[0] / 4), 4))
+            points = np.reshape(points, (int(points.shape[0] / 3), 3))
             lidar_data = np.array(points[:, :2])
             lidar_data *= min(self.hud.dim) / 100.0
             lidar_data += (0.5 * self.hud.dim[0], 0.5 * self.hud.dim[1])
